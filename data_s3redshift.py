@@ -52,8 +52,7 @@ def save_and_upload(xml_root, xml_path, json_path, s3_key):
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
 def fetch_xml(url, params, timeout=30):
     """
-    지정 URL과 파라미터로 API 호출 후 XML Element를 반환.
-    오류 발생 시 None 반환.
+    지정 URL과 파라미터로 API 호출 후 XML Element를 반환. 오류 발생 시 None 반환.
     """
     try:
         response = requests.get(url, params=params, timeout=timeout)
@@ -63,7 +62,9 @@ def fetch_xml(url, params, timeout=30):
         logging.error(f"API 호출 오류: {url} / params: {params} / {e}")
         return None
 
-# --- 태스크별 함수 ---
+
+# Task 함수
+
 
 def fetch_and_upload_kopis_data(**kwargs):
     """
@@ -112,6 +113,7 @@ def fetch_and_upload_kopis_data(**kwargs):
         s3_key = f"{S3_FOLDER}/kopis_2024_{quarter}_stats.json"
         save_and_upload(quarter_elem, xml_output_path, json_output_path, s3_key)
 
+'''
 def fetch_performance_details(**kwargs):
     """
     Task 2: 기존 분기별 XML 파일을 결합하여 공연 목록을 만들고,
@@ -161,16 +163,12 @@ def fetch_performance_details(**kwargs):
     json_output_file = "/opt/airflow/data/kopis_2024_details.json"
     s3_key = f"{S3_FOLDER}/kopis_2024_details.json"
     save_and_upload(details_root, xml_output_file, json_output_file, s3_key)
+'''
 
 def fetch_generic_stats(task_label, base_url, year, month_range, extra_params, xml_path, s3_key):
     """
     Task 3, 4 (지역별, 장르별 통계)에서 공통으로 사용할 통계 데이터 조회 함수.
     task_label: 로깅에 사용할 태스크 이름
-    base_url: API 엔드포인트
-    year, month_range: 대상 연도 및 월 리스트
-    extra_params: 추가 파라미터 (없으면 None)
-    xml_path: 최종 XML 파일 경로
-    s3_key: S3 업로드 대상 키
     """
     aggregated_root = ET.Element("prfsts_aggregated")
     for month in month_range:
@@ -250,7 +248,7 @@ def fetch_period_stats(**kwargs):
         s3_key = f"{S3_FOLDER}/kopis_{year}_period_stats.json"
         save_and_upload(aggregated_root, xml_output_file, json_output_file, s3_key)
 
-# --- DAG 정의 및 Task 순서 지정 ---
+# DAG 정의
 
 default_args = {
     'owner': 'airflow',
@@ -272,12 +270,12 @@ with DAG(
         task_id='fetch_performance_list',
         python_callable=fetch_and_upload_kopis_data,
     )
-    
+    '''
     task2 = PythonOperator(
         task_id='fetch_performance_details',
         python_callable=fetch_performance_details,
     )
-    
+    '''
     task3 = PythonOperator(
         task_id='fetch_region_stats',
         python_callable=fetch_region_stats,
@@ -293,5 +291,5 @@ with DAG(
         python_callable=fetch_period_stats,
     )
     
-    # task1 >> task2 >> 
-    task3 >> task4 >> task5
+    task1 >> task3 >> task4 >> task5
+    # task2
