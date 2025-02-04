@@ -109,6 +109,10 @@ def s3_to_redshift(**context):
     """S3에서 JSON 데이터를 가져와 Redshift에 적재"""
     year = context["execution_date"].year - 1
     redshift_hook = PostgresHook(postgres_conn_id="myredshift") # Redshift 연결
+    s3_hook = S3Hook(aws_conn_id=AWS_CONN_ID)
+    
+    # 실수, 로컬에서 파일 가져옴
+    '''
     json_file = f"/opt/airflow/data/kopis_{year}_genre_stats.json" # Json 파일 경로
 
     # 파일 열고 data에 넣기
@@ -132,6 +136,45 @@ def s3_to_redshift(**context):
                 float(prfst["amountshr"])
             )
             records.append(each_record)
+    '''
+    
+    # S3 파일 경로 및 키 (S3에 저장된 JSON 파일)
+    s3_key = f"{S3_folder}/kopis_{year}_genre_stats.json"
+    # S3 객체를 문자열로 읽어오기
+    json_str = s3_hook.read_key(key=s3_key, bucket_name=S3_bucket)
+    
+    #JSON 파싱
+    data = json.loads(json_str)
+    
+    # 각 월별, 각 prfst 레코드를 순회하며 레코드 생성
+    records = []
+    months = data.get("kopis_genre_stats", {}).get("month", [])
+    # 만약 month가 단일 dict라면 리스트로 변환
+    if isinstance(months, dict):
+        months = [months]
+    
+    for month_data in months:
+        # XML 파일에서 속성은 "@year-month"로 되어있음. 없으면 "year_month"로 시도
+        year_month = month_data.get("@year-month") or month_data.get("year_month")
+        prfst_entries = month_data.get("prfst", [])
+        # prfst_entries가 dict인 경우 단일 객체이므로 리스트로 변환
+        if isinstance(prfst_entries, dict):
+            prfst_entries = [prfst_entries]
+        for prfst in prfst_entries:
+            try:
+                record = (
+                    year_month,
+                    prfst["cate"],
+                    int(prfst["amount"]),
+                    int(prfst["nmrs"]),
+                    int(prfst["prfdtcnt"]),
+                    float(prfst["nmrsshr"]),
+                    int(prfst["prfprocnt"]),
+                    float(prfst["amountshr"])
+                )
+                records.append(record)
+            except Exception as e:
+                logging.error(f"레코드 파싱 오류: {e} / 데이터: {prfst}")
 
     # 테이블 없으면 생성
     create_genre_table_sql = f"""
@@ -147,6 +190,7 @@ def s3_to_redshift(**context):
         );
     """
     redshift_hook.run(create_genre_table_sql)
+    logging.info(f"KOPIS_{year}_genre 테이블 생성 완료")
 
     # 테이블 레코드 삽입
     redshift_hook.insert_rows(
@@ -155,7 +199,7 @@ def s3_to_redshift(**context):
         target_fields=["year_month", "cate", "amount", "nmrs", "prfdtcnt", "nmrsshr", "prfprocnt", "amountshr"],
         commit_every=100
     )
-    logging.info(f"[KOPIS_{year}_genre] {len(records)} 건의 데이터가 Redshift에 적재 완료")
+    logging.info(f"[KOPIS_{year}_genre2] {len(records)} 건의 데이터가 Redshift에 적재 완료")
 
 
 # 대그 만들기
