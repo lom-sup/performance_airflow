@@ -14,7 +14,7 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # 전역 변수
-SERVICE_KEY = Variable.get("KOPIS_SERVICE_KEY", default_var="b334b3a40adc4d40bc3211b94b1c7d11")
+SERVICE_KEY = Variable.get("KOPIS_SERVICE_KEY")
 S3_bucket = "performance-airflow-e2e"
 S3_folder = "kopis_genre_data"
 AWS_CONN_ID = "myaws"
