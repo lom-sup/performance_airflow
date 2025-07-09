@@ -1,6 +1,8 @@
 # performance_airflow
 airflow 등을 이용한 한국 공연문화 분석
 
+<br/>
+
 # 공연 장르별 통계 데이터 파이프라인 구축
 
 **개요**
@@ -126,4 +128,4 @@ amountshr | 티켓판매액 점유율 | 4.9
 
 
 ## Table 예시
-![실습-Simple-ETL의-사본-Colab-02-04-2025_11_02_AM](https://github.com/user-attachments/assets/ae8cbb46-a69e-406d-8584-b849d77e016d)
+<img width="2102" height="820" alt="Image" src="https://github.com/user-attachments/assets/81425017-7532-40cb-bc5d-f90ac831e75d" />
